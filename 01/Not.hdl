@@ -6,6 +6,20 @@
 /**
  * Not gate:
  * out = not in
+ 
+ NAND
+a b out
+0 0 1
+0 1 1
+1 0 1
+1 1 0
+
+NOT
+a out
+0 1
+1 0
+
+značiiiiiiii, kad je a==b onda imamo NOT(a) :D
  */
 
 CHIP Not {
@@ -13,5 +27,5 @@ CHIP Not {
     OUT out;
 
     PARTS:
-    // Put your code here:
+    Nand(a=in, b=in, out=out);
 }
