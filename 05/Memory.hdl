@@ -28,4 +28,13 @@ CHIP Memory {
 
     PARTS:
     // Put your code here:
+    And(a=address[14], b=address[14], out=screen); // アドレスがメモリ(16384)かそれ以外かを判定する
+    And(a=address[14], b=address[13], out=keyboard); // キーボードを読んでいるかどうか判定する
+    Not(in=screen, out=ram); // スクリーンに書き込むかどうかを判定する
+    And(a=ram, b=load, out=loadram);
+    RAM16K(in=in, load=loadram, address=address[0..13], out=ramout);
+    Screen(in=in, load=screen, address=address[0..12], out=screenout);
+    Keyboard(out=keyboardout);
+    Mux16(a=ramout, b=screenout, sel=screen, out=v1);
+    Mux16(a=v1, b=keyboardout , sel=keyboard, out=out);
 }

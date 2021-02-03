@@ -39,5 +39,57 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+
+
+    And(a=instruction[15], b=instruction[15], out=isC); // A命令か否かを判定 0がA命令 1がC命令
+    // C命令の構成：1 xx a cccccc ddd jjj
+    //                          543 210
+    //                                
+    Or16(a=instruction, b=instruction, out[0]=j3, out[1]=j2, out[2]=j1, out[3]=d3, out[4]=d2, out[5]=d1, out[6..11]=c, out[12]=a); // NOTE: falseで良いかは謎
+    Mux16(a=Aout, b=inM, sel=a, out=ALUx); // HELP: AoutとinMが逆かも
+
+    // ALUで計算フェイズ
+    ALU(x=Dout, 
+        y=ALUx, 
+        zx=instruction[11], 
+        nx=instruction[10], 
+        zy=instruction[9], 
+        ny=instruction[8], 
+        f= instruction[7], 
+        no=instruction[6], 
+        out=hoge, 
+        out=outALU, 
+        zr=isZero, 
+        ng=isNegative);
+
+    // WriteMかどうか
+    And(a=instruction[15], b=d3, out=writeM);
+
+    // Dレジスタに格納するかいなか
+    And(a=instruction[15], b=d2, out=writeD);
+    DRegister(in=outALU, load=writeD, out=Dout); // Dレジスタ
+    
+    // Mの出力に関して
+    Mux16(a=inM, b=hoge, sel=instruction[3], out=outM);
+
+    // Aに格納する
+    Not(in=isC, out=isA); // A命令ならtrue
+    Mux16(a=outALU, b=instruction, sel=isA, out=resultForA);
+
+    Not(in=instruction[15], out=loadA);
+    Or(a=d1, b=loadA, out=loadToA);
+    ARegister(in=resultForA, load=loadToA, out=Aout, out[0..14]=addressM); // Aレジスタ
+
+    // ジャンプするか
+    And(a=isNegative, b=j1, out=v1); // ALUの結果が負でかつ、j1が1の時(out<0がジャンプ条件の時)1
+    And(a=isZero, b=j2, out=v2); // ALUの結果が0でかつ、j2が1の時(out=0がジャンプ条件の時)1
+
+    Not(in=isZero, out=notZero);
+    Not(in=isNegative, out=isPositive);
+    And(a=notZero, b=isPositive, out=positive);
+    And(a=positive, b=j3, out=v3); // ALUの結果が正でかつ、j2が1の時(out=0がジャンプ条件の時)1
+    Or(a=v1, b=v2, out=v4);
+    Or(a=v3, b=v4, out=isLoad);
+    And(a=instruction[15], b=isLoad, out=fuga);
+    PC(in=Aout, load=fuga, inc=true, reset=reset, out[0..14]=pc);
 }
