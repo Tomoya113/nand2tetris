@@ -1,5 +1,6 @@
 import sys
 import tempfile
+import re
 
 class Parser:
   # ファイル
@@ -15,32 +16,40 @@ class Parser:
 
   # 入力から次のコマンドを読み、それを現在のコマンドにする
   def advance(self):
-    self.current_command = self.file.readline()
+    self.current_command = self.temp_file.readline()
     if not self.current_command:
       self.hasMoreCommands = False
     else:
-      print(self.current_command)
+      return
 
   # 現在のコマンドの種類を返す。
   def commandType(self):
-    
-    print(first_two_letter)
+    first_letter = self.current_command[:1]
+    if first_letter == "@":
+      return "A_COMMAND"
+    elif first_letter == "(":
+      return "L_COMMAND"
+    else:
+      return "C_COMMAND"
 
   # 現コマンド@Xxxまたは(Xxx)のXxxを返す。AかLのときだけ返す。
   def symbol(self):
-    print("hoge")
+    if self.current_command[:1] == "@":
+      print(re.sub("@", "", self.current_command))
+    else:
+      re.sub("\(|\)", "", current_command)
 
   # 現C命令のdestニーモニックを返す。
   def dest(self):
-    print("hoge")
+    return
 
   # 現C命令のcompニーモニックを返す。
   def comp(self):
-    print("hoge")
+    return
 
   # 現C命令のcompニーモニックを返す。
   def jump(self):
-    print("hoge")
+    return
 
   def extract_unnecessary_line(self):
     while True:
@@ -48,28 +57,30 @@ class Parser:
 
       if not line:
         break
-
-      first_two_letter = line[:2]
-      if first_two_letter != "//" and line != '\n':
-        self.temp_file.write(line)
+      # 空白を削除
+      line = re.sub(r"\s", "", line)
+      if line[:2] != "//" and len(line) != 0:
+        self.temp_file.write(line + "\n")
         
-
-
   def start_parsing(self):
-    self.temp_file.write(word)
+    self.extract_unnecessary_line()
+    self.temp_file.seek(0)
     # while self.hasMoreCommands:
-    # for i in range(5):
-    #   self.advance()
-    #   current_command_type = self.commandType()
-
-# tempfileを読み込む時に必要
-# self.temp_file.seek(0)
+    for i in range(5):
+      self.advance()
+      print("current_command", self.current_command)
+      current_command_type = self.commandType()
+      if current_command_type == "A_COMMAND" or current_command_type == "L_COMMAND":
+        self.symbol()
+      else:
+        continue
+        # self.dest()
+        # self.comp()
+        # self.jump()
 
 def init():
   parser = Parser()
-  parser.extract_unnecessary_line()
-  # parser.start_parsing()
-  
+  parser.start_parsing()
 
 if __name__ == "__main__":
   init()
