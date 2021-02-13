@@ -2,6 +2,7 @@ import sys
 import tempfile
 import re
 import Code
+from SymbolTable import SymbolTable
 
 class Parser:
   # ファイル
@@ -13,9 +14,12 @@ class Parser:
   hasMoreCommands = True
   # パース後のファイル
   parsed_file = None
+  # シンボルテーブル
+  symbol_table = SymbolTable()
+  
   def __init__(self):
     self.file = open(sys.argv[1], 'r', encoding='UTF-8')
-    self.parsed_file = open(sys.argv[1] + ' result', 'w')
+    self.parsed_file = open(sys.argv[1] + '.result.hack', 'w')
 
   # 入力から次のコマンドを読み、それを現在のコマンドにする
   def advance(self):
@@ -40,7 +44,24 @@ class Parser:
     if self.current_command[:1] == "@":
       return re.sub("@", "", self.current_command)
     else:
-      re.sub("\(|\)", "", current_command)
+      return re.sub("\(|\)", "", self.current_command)
+  
+  # シンボルを一旦探しておく
+  def find_symbol(self):
+    current_line = 0
+    while True:
+      self.advance()
+      if not self.hasMoreCommands:
+        break
+      command_type = self.commandType()
+      if command_type == "L_COMMAND":
+        symbol = self.symbol()[:-1]
+        self.symbol_table.addEntry(symbol, current_line)
+      else:
+        current_line += 1
+    # 終わったら初期化
+    self.temp_file.seek(0)
+    self.hasMoreCommands = True
 
   # 現C命令のdestニーモニックを返す。
   def dest(self, string):
@@ -96,18 +117,31 @@ class Parser:
 
   def start_parsing(self):
     self.setup_before_parsing()
-    # while self.hasMoreCommands:
-    for i in range(5):
+    self.find_symbol()
+    result = ""
+    while True:
       self.advance()
-      if self.commandType() in ["A_COMMAND", "L_COMMAND"]:
-        print("symbol", self.symbol())
-        result = Code.Code.assemble_a_command(self.symbol())
-        print(result)
+      if not self.hasMoreCommands:
+        break
+      if self.commandType() == "A_COMMAND":
+        symbol = self.symbol()[:-1]
+        if symbol.isdecimal():
+          result = Code.Code.assemble_a_command(symbol)
+        elif self.symbol_table.contains(symbol):
+          parsed_symbol = self.symbol_table.getAddress(symbol)
+          result = Code.Code.assemble_a_command(parsed_symbol)
+        else:
+          self.symbol_table.addEntry(symbol, None)
+          parsed_symbol = self.symbol_table.getAddress(symbol)
+          result = Code.Code.assemble_a_command(parsed_symbol)
+        self.parsed_file.write(result + "\n")
+      elif self.commandType() == "L_COMMAND":
+        continue
       else:
-        result = self.parse_c_command()
-        print(result[0],result[1],result[2])
-        assembled_code = Code.Code.assemble_c_command(result)
-        print(assembled_code)
+        code = self.parse_c_command()
+        result = Code.Code.assemble_c_command(code)
+        print(result)
+        self.parsed_file.write(result + "\n")
 
 def assemble():
   parser = Parser()

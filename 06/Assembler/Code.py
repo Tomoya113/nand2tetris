@@ -4,13 +4,13 @@ class Code:
     dest = self.dest(code[0])
     comp = self.comp(code[1])
     jump = self.jump(code[2])
-    return f'111{dest}{comp}{jump}'
+    return f'111{comp}{dest}{jump}'
   
   @classmethod
   def assemble_a_command(self, code):
     number = int(code)
     result = ""
-
+    bit_number = 16
     while True:
       bit = number % 2
       if bit > 1:
@@ -19,8 +19,8 @@ class Code:
       number /= 2
       if number < 1:
         break
-
-    return result[::-1]
+    required_bit_number = bit_number - len(result)
+    return "0"*required_bit_number + result[::-1]
 
   # 3ビット
   def dest(dest):
